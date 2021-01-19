@@ -1,18 +1,15 @@
-import os
-import sys
+import os, sys, cv2, PIL
 import matplotlib.pyplot as plt
-import PIL
-import PIL.Image
-import tensorflow as tf
 from matplotlib.image import imread
-import cv2
+import PIL.Image
 import numpy as np
 import tensorflow as tf
 from keras import layers
-from keras.layers import Input, Flatten, Dense, Conv2D, BatchNormalization, Activation, Dropout, ReLU, Softmax, LeakyReLU, UpSampling2D, Conv2DTranspose
+from keras.layers import Input, Conv2D, BatchNormalization, Activation, Dropout, ReLU, Softmax, LeakyReLU, UpSampling2D, Conv2DTranspose
 from keras.models import Model
-from keras.losses import binary_crossentropy, CategoricalCrossentropy, MAE, MeanSquaredError, BinaryCrossentropy
+from keras.losses import BinaryCrossentropy
 from keras.metrics import Accuracy, CategoricalCrossentropy, MeanSquaredError
 from keras.optimizers import Adam, Optimizer, RMSprop, SGD
 from keras.regularizers import l1, l2
-from keras.applications.vgg19 import VGG19
+from keras.applications.vgg19 import VGG19, preprocess_input, decode_predictions
+
