@@ -12,4 +12,4 @@ from keras.metrics import Accuracy, CategoricalCrossentropy, MeanSquaredError
 from keras.optimizers import Adam, Optimizer, RMSprop, SGD
 from keras.regularizers import l1, l2
 from keras.applications.vgg19 import VGG19, preprocess_input, decode_predictions
-
+from tensorflow.keras.callbacks import ModelCheckpoint
