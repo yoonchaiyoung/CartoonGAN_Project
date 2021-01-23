@@ -21,6 +21,8 @@ def resizing(image_path, resizing_path):
         img_bgr = cv2.imread(image_path + '/' + imageName)
         img = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
 
+        original_size = img.shape
+
         # 이미지 300x300 사이즈로 resizing
         img_resizing = cv2.resize(img, dsize=(300, 300), interpolation=cv2.INTER_LINEAR)
 
@@ -29,3 +31,5 @@ def resizing(image_path, resizing_path):
                     cv2.cvtColor(img_resizing, cv2.COLOR_BGR2RGB))
 
     print("resizing된 사진 저장 완료")
+
+    return original_size

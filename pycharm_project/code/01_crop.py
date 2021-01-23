@@ -4,12 +4,10 @@ def crop(image_path, crop_path):
     파라미터 설명
     image_path : 이미지 파일이 있는 디렉토리 위치
     crop_path : crop된 이미지를 넣을 디렉토리 위치
-
     ------------------------------------------------
     함수 설명
 
     이미지 불러와서 crop한 이미지 저장
-
     나중에는 이미지 return 하는걸로 바꾸기
     ------------------------------------------------
     """
@@ -20,7 +18,7 @@ def crop(image_path, crop_path):
     # crop된 이미지를 저장할 디렉토리 생성 : 디렉토리가 없으면 생성, 디렉토리가 존재하면 아무것도 하지 않음.
     os.makedirs(crop_path, exist_ok=True)
 
-    for imageName in imageName_list:
+    for imageName in imageName_list[0]:
         img_bgr = cv2.imread(image_path + '/' + imageName)  # OpenCV는 이미지를 저장할 때 색상을 BGR 순서로 저장 -> RGB로 바꿔주어야 함
         img = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
 
