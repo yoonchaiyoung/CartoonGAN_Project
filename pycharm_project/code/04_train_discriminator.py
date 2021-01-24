@@ -1,4 +1,4 @@
-def train_discriminator(discriminator, batch_size, cartoon_img, edge_smoothing_img, cartoonized_photo):
+def train_discriminator(batch_size, cartoon_img, edge_smoothing_img, cartoonized_photo):
     valid = np.ones((batch_size, 1))
     fake = np.zeros((batch_size, 1))
 

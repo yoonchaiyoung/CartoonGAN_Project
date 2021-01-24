@@ -105,7 +105,7 @@ def content_loss(photo_path, cartoonized_photo_path):
 
     model = vgg_transfer_model()
     photo_feature_map_list = vgg19_transfer_learning(photo_path, model)
-    cartoonized_feature_map_list = vgg19_transfer_learning(cartoonized_photo_path, model)
-    content_loss = l1_regularization(photo_feature_map_list, cartoonized_photo_feature_map_list)
+    cartoonized_photo_feature_map_list = vgg19_transfer_learning(cartoonized_photo_path, model)
+    cnt_loss = l1_regularization(photo_feature_map_list, cartoonized_photo_feature_map_list)
 
-    return content_loss
+    return cnt_loss

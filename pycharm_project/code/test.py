@@ -19,6 +19,7 @@ import requests
 from io import BytesIO
 from datauri import DataURI
 import json
+from tensorflow.keras.callbacks import ModelCheckpoint
 
 import 01_crop
 crop(dir1)

@@ -8,21 +8,22 @@ if __name__ == "__main__":
     from PIL import Image
     import numpy as np
     import tensorflow as tf
-    import tensorflow.keras as keras
-    from tensorflow.keras import layers
-    from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, Activation, Dropout, ReLU, Softmax, LeakyReLU, UpSampling2D, Conv2DTranspose
-    from tensorflow.keras.models import Model
-    from tensorflow.keras.losses import BinaryCrossentropy
-    from tensorflow.keras.metrics import Accuracy, CategoricalCrossentropy, MeanSquaredError
-    from tensorflow.keras.optimizers import Adam, Optimizer, RMSprop, SGD
-    from tensorflow.keras.regularizers import l1, l2
-    from tensorflow.keras.applications.vgg19 import VGG19, preprocess_input, decode_predictions
+    from keras import layers
+    from keras.layers import Input, Conv2D, BatchNormalization, Activation, Dropout, ReLU, Softmax, LeakyReLU, \
+        UpSampling2D, Conv2DTranspose
+    from keras.models import Model
+    from keras.losses import BinaryCrossentropy
+    from keras.metrics import Accuracy, CategoricalCrossentropy, MeanSquaredError
+    from keras.optimizers import Adam, Optimizer, RMSprop, SGD
+    from keras.regularizers import l1, l2
+    from keras.applications.vgg19 import VGG19, preprocess_input, decode_predictions
     from tensorflow.keras.callbacks import ModelCheckpoint
     import flickrapi
     import requests
     from io import BytesIO
     from datauri import DataURI
     import json
+    from tensorflow.keras.callbacks import ModelCheckpoint
 
 
 

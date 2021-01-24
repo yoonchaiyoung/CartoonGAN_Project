@@ -1,4 +1,8 @@
-def discriminator(loss, optimizer, metrics):
+def discriminator():
+    """
+    discriminator 모델 구조만 존재
+    """
+
     input_shape = (300, 300, 3)
     input_layer = Input(input_shape)
 
@@ -52,13 +56,9 @@ def discriminator(loss, optimizer, metrics):
                  )(net)
 
     # disciminator 완성
-    model = Model(inputs=input_layer,
+    d = Model(inputs=input_layer,
                   outputs=net,
                   name="discriminator"
                   )
 
-    # compile
-    model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
-    model.trainable = False  # trainable 메소드는 compile할 때만 영향을 미친다
-
-    return model
+    return d

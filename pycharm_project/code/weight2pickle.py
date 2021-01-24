@@ -1,5 +1,3 @@
-from tensorflow.keras.callbacks import ModelCheckpoint
-
 # 순서 1
 # model.compile
 

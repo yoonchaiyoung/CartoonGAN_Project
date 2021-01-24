@@ -1,10 +1,6 @@
-def generator(loss, optimizer, metrics):
+def generator():
     """
-    --------------------------------------------
-    함수 설명
-    --------------------------------------------
-    input : resizing된 사진
-    output : 카툰화된 사진
+    generator 모델 구조만 존재
     """
 
     # ----------------------------------------------------------------------------------------------
@@ -118,13 +114,9 @@ def generator(loss, optimizer, metrics):
                  )(net)
 
     # generator 완성
-    model = Model(inputs=input_layer,
-                  outputs=net,
-                  name="generator"
-                  )
+    g = Model(inputs=input_layer,
+              outputs=net,
+              name="generator"
+              )
 
-    # compile
-    model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
-    model.trainable = False  # trainable 메소드는 compile할 때만 영향을 미친다
-
-    return model
+    return g
