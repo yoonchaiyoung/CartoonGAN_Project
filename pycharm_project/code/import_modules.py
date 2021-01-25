@@ -19,3 +19,5 @@ from io import BytesIO
 from datauri import DataURI
 import json
 from tensorflow.keras.callbacks import ModelCheckpoint
+from keras.activations import sigmoid
+import pickle

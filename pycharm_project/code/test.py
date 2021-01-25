@@ -21,5 +21,8 @@ from datauri import DataURI
 import json
 from tensorflow.keras.callbacks import ModelCheckpoint
 
-import 01_crop
-crop(dir1)
+# from 파이썬 파일명 import 파일 안에 들어있는 함수명
+# from test2 import test22
+# test22()
+# 정상작동 확인완료
+

@@ -24,6 +24,8 @@ if __name__ == "__main__":
     from datauri import DataURI
     import json
     from tensorflow.keras.callbacks import ModelCheckpoint
+    from keras.activations import sigmoid
+
 
 
 

@@ -69,7 +69,7 @@ def content_loss(photo_path, cartoonized_photo_path):
             img_resizing = cv2.resize(img, dsize=(224, 224), interpolation=cv2.INTER_LINEAR)
             img_array = np.asarray(img_resizing)
             img_4D = img_array.reshape((1, img_array.shape[0], img_array.shape[1], img_array.shape[2]))
-            img_preprocess_input = preprocess_input_img_4D
+            img_preprocess_input = preprocess_input(img_4D)
             img_float32 = tf.cast(img_preprocess_input, dtype=tf.float32)
 
             # VGG19 conv4_4 layer에 해당하는 feature map 추출하기
