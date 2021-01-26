@@ -1,3 +1,12 @@
+from M_discriminator import discriminator
+from M_generator import generator
+from L_adversarial_loss import adversarial_loss
+from L_content_loss import content_loss
+from O_discriminator_optimizer import discriminator_optimizer
+from O_generator_optimizer import generator_optimizer
+from T_train_generator import train_generator
+from T_train_discriminator import train_discriminator
+
 def train_CartoonGAN(epochs, batch_size=0, photo_path, edge_smoothing_path, generated_list):
 
     # 모델 구조 로드
@@ -6,7 +15,11 @@ def train_CartoonGAN(epochs, batch_size=0, photo_path, edge_smoothing_path, gene
 
     # loss함수 로드
     content_loss = content_loss()
-    adversarial_loss = adversarial_loss()
+    adversarial_loss = adversarial_loss(disc_c="", disc_e=edge_list, disc_p=cartoonized_photo_list)
+
+    # optimizer 로드
+    generator_optimizer = generator_optimizer()
+    discriminator_optimizer = discriminator_optimizer()
 
     # resizing된 사진을 담은 리스트 생성
     photoName_list = os.listdir(photo_path)
@@ -23,6 +36,7 @@ def train_CartoonGAN(epochs, batch_size=0, photo_path, edge_smoothing_path, gene
         cartoon_bgr = cv2.imread(edge_smoothing_path + '/' + edgeCartoonName)
         cartoon = cv2.cvtColor(cartoon_bgr, cv2.COLOR_BGR2RGB)
         edge_list.append(cartoon)
+
 
     # 모델 compile
     g.compile(loss=content_loss, optimizer=generator_optimizer)
@@ -48,14 +62,13 @@ def train_CartoonGAN(epochs, batch_size=0, photo_path, edge_smoothing_path, gene
     with tf.Session() as sess:  # 세션을 만들어서 연산그래프 실행
         sess.run(tf.global_variables_initializer())  # 모든 변수를 초기화
         for epoch in range(10):
-            # optimizer 돌리기
-            _ = sess.run()
+            train_generator(generator=g, batch_size=batch_size, photo_list=photo_list)
 
         # 카툰화된 사진을 담은 리스트 생성
         cartoonized_photo_list = []
         cartoonized_photo = sess.run(generator(photo, reuse=True),
                                      feed_dict={photo : photo_list})  # photo_list에서 한개씩 꺼낸것을 photo라고 함
-        cartoonized_photo_list.apend(cartoonized_photo)
+        cartoonized_photo_list.append(cartoonized_photo)
 
         # 카툰화된 사진 저장
         for idx, photoName in enumerate(photoName_list):
@@ -83,8 +96,8 @@ def train_CartoonGAN(epochs, batch_size=0, photo_path, edge_smoothing_path, gene
     # generator 훈련할 때는 discriminator 파라미터 업데이트 안되도록 고정
     # discriminator 훈련할 때는 generator 파라미터 업데이트 안되도록 고정
     for epoch in range(epochs):
-        train_discriminator()
-        train_generator()
+        train_discriminator(discriminator=d, batch_size=batch_size, cartoon_img=)
+        train_generator(generator=g, batch_size=batch_size, photo_list=edge_list)
 
 
     return 

@@ -14,7 +14,7 @@ def change_file_name_simply(file_path, change_path, front_name, digits_num):
         change_file_src = os.path.join(change_path, changeName)
         os.rename(file_src, change_file_src)
 
-change_file_name_simply(file_path="C:/Users/USER/Desktop/CartoonGAN_pycharm/data/cartoon_img/frozen2",
-                        change_path="C:/Users/USER/Desktop/CartoonGAN_pycharm/data/cartoon_img/frozen2",
-                        front_name="frozen2",
+change_file_name_simply(file_path="C:/Users/USER/Desktop/CartoonGAN_pycharm/data/photo_img/vintage",
+                        change_path="C:/Users/USER/Desktop/CartoonGAN_pycharm/data/photo_img/vintage",
+                        front_name="vintage",
                         digits_num=5)
