@@ -1,0 +1,2 @@
+model_checkpoint_path: "pretrain_generator-1"
+all_model_checkpoint_paths: "pretrain_generator-1"
