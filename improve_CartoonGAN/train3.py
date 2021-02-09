@@ -10,23 +10,41 @@ import numpy as np
 from tqdm import tqdm
 
 from logger import get_logger
-from generator import Generator
-from discriminator import Discriminator
+from generator3 import Generator3
+from discriminator3 import Discriminator3
 
 # GPU 설정
-# os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)
+
+# import tensorflow as tf
+# print(tf.test.is_built_with_cuda())
 #
-# config = tf.compat.v1.ConfigProto()
-# config.gpu_options.allow_growth = True
-# session = tf.compat.v1.Session(config=config)
-
-import tensorflow as tf
-print(tf.test.is_built_with_cuda())
-
-print(tf.config.list_physical_devices("GPU"))
-print(tf.sysconfig.get_build_info())
+# print(tf.config.list_physical_devices("GPU"))
+# print(tf.sysconfig.get_build_info())
 # 이걸로 돌리니 cpu 30%정도 사용하고 gpu 10% 정도 사용하는 걸로 바뀌고
 # 윈도우 작업 관리자로 봤을 때 전용 gpu 메모리 사용량이 많이 차지하는 것을 알 수 있음
+
+# gpu 메모리 할당문제 해결 코드
+# gpu = tf.config.experimental.list_physical_devices("GPU")
+# if gpu:
+#     try:
+#         tf.config.experimental.set_virtual_device_configuration(device=gpu,
+#                                                                 logical_devices=[tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)])
+#         logical_gpus = tf.config.experimental.list_logical_devices("GPU")
+#         print(len(gpu), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+#     except RuntimeError as e:
+#         print(e)
+
+# CUBLAS_STATUS_ALLOC_FAILED 햬결하기 위해 gpu memory를 미리 할당해주는 코드
+# gpu_devices = tf.config.experimental.list_physical_devices('GPU')
+# for device in gpu_devices:
+#     tf.config.experimental.set_memory_growth(device, True)
+
+
 
 
 @tf.function
@@ -334,6 +352,7 @@ class Trainer:
         self.d_smooth_loss_metric(d_smooth_loss)
 
     def pretrain_generator(self):
+        global step
         summary_writer = tf.summary.create_file_writer(os.path.join(self.log_dir, "pretrain"))
         self.logger.info(f"Starting to pretrain generator with {self.pretrain_epochs} epochs...")
         self.logger.info(
@@ -349,11 +368,11 @@ class Trainer:
         else:
             self.logger.info(f"Initializing generator with "
                              f"batch_size: {self.batch_size}, input_size: {self.input_size}...")
-        generator = Generator(base_filters=2 if self.debug else 64, light=self.light)
-        generator(tf.keras.Input(
+        generator3 = Generator3(base_filters=2 if self.debug else 64, light=self.light)
+        generator3(tf.keras.Input(
             shape=(self.input_size, self.input_size, 3),
             batch_size=self.batch_size))
-        generator.summary()
+        generator3.summary()
 
         self.logger.info("Setting up optimizer to update generator's parameters...")
         optimizer = tf.keras.optimizers.Adam(
@@ -362,7 +381,7 @@ class Trainer:
 
         self.logger.info(f"Try restoring checkpoint: `{self.pretrain_checkpoint_prefix}`...")
         try:
-            checkpoint = tf.train.Checkpoint(generator=generator)
+            checkpoint = tf.train.Checkpoint(generator=generator3)
             status = checkpoint.restore(tf.train.latest_checkpoint(
                 os.path.join(self.checkpoint_dir, "pretrain")))
             status.assert_consumed()
@@ -419,7 +438,7 @@ class Trainer:
                 #       since it generates new iterator every epoch and can
                 #       hardly be garbage-collected by python
                 image_batch = dataset.next()
-                self.pretrain_step(image_batch, generator, optimizer)
+                self.pretrain_step(image_batch, generator3, optimizer)
 
                 if step % self.pretrain_reporting_steps == 0:
 
@@ -430,7 +449,7 @@ class Trainer:
                                           step=global_step)
                         if not self.disable_sampling:
                             fake_batch = tf.cast(
-                                (generator(real_batch, training=False) + 1) * 127.5, tf.uint8)
+                                (generator3(real_batch, training=False) + 1) * 127.5, tf.uint8)
                             img = np.expand_dims(self._save_generated_images(
                                     fake_batch,
                                     image_name=(f"pretrain_generated_images_at_epoch_{epoch_idx}"
@@ -442,7 +461,7 @@ class Trainer:
             with summary_writer.as_default():
                 if not self.disable_sampling:
                     val_fake_batch = tf.cast(
-                        (generator(val_real_batch, training=False) + 1) * 127.5, tf.uint8)
+                        (generator3(val_real_batch, training=False) + 1) * 127.5, tf.uint8)
                     img = np.expand_dims(self._save_generated_images(
                             val_fake_batch,
                             image_name=("pretrain_val_generated_images_at_epoch_"
@@ -488,14 +507,14 @@ class Trainer:
         else:
             self.logger.info(f"Initializing generator with "
                              f"batch_size: {self.batch_size}, input_size: {self.input_size}...")
-        g = Generator(base_filters=2 if self.debug else 64, light=self.light)
-        g(tf.keras.Input(
+        g3 = Generator3(base_filters=2 if self.debug else 64, light=self.light)
+        g3(tf.keras.Input(
             shape=(self.input_size, self.input_size, 3),
             batch_size=self.batch_size))
 
         self.logger.info(f"Searching existing checkpoints: `{self.generator_checkpoint_prefix}`...")
         try:
-            g_checkpoint = tf.train.Checkpoint(generator=g)
+            g_checkpoint = tf.train.Checkpoint(generator=g3)
             g_checkpoint.restore(
                 tf.train.latest_checkpoint(
                     self.generator_checkpoint_dir)).assert_existing_objects_matched()
@@ -516,7 +535,7 @@ class Trainer:
             )
 
             try:
-                g_checkpoint = tf.train.Checkpoint(generator=g)
+                g_checkpoint = tf.train.Checkpoint(generator=g3)
                 g_checkpoint.restore(tf.train.latest_checkpoint(
                     os.path.join(
                         self.checkpoint_dir, "pretrain"))).assert_existing_objects_matched()
@@ -541,15 +560,15 @@ class Trainer:
             d_base_filters = 24
         else:
             d_base_filters = 32
-        d = Discriminator(base_filters=d_base_filters)
-        d(tf.keras.Input(
+        d3 = Discriminator3(base_filters=d_base_filters)
+        d3(tf.keras.Input(
             shape=(self.input_size, self.input_size, 3),
             batch_size=self.batch_size))
 
         self.logger.info("Searching existing checkpoints: "
                          f"`{self.discriminator_checkpoint_prefix}`...")
         try:
-            d_checkpoint = tf.train.Checkpoint(d=d)
+            d_checkpoint = tf.train.Checkpoint(d=d3)
             d_checkpoint.restore(
                 tf.train.latest_checkpoint(
                     self.discriminator_checkpoint_dir)).assert_existing_objects_matched()
@@ -595,7 +614,7 @@ class Trainer:
                 source_images, target_images, smooth_images = (
                     ds_source.next(), ds_target.next(), ds_smooth.next())
                 self.train_step(source_images, target_images, smooth_images,
-                                g, d, g_optimizer, d_optimizer)
+                                g3, d3, g_optimizer, d_optimizer)
 
                 if step % self.reporting_steps == 0:
 
@@ -606,7 +625,7 @@ class Trainer:
                             metric.reset_states()
                         if not self.disable_sampling:
                             fake_batch = tf.cast(
-                                (g(real_batch, training=False) + 1) * 127.5, tf.uint8)
+                                (g3(real_batch, training=False) + 1) * 127.5, tf.uint8)
                             img = np.expand_dims(self._save_generated_images(
                                     fake_batch,
                                     image_name=("gan_generated_images_at_epoch_"
@@ -621,7 +640,7 @@ class Trainer:
             with summary_writer.as_default():
                 if not self.disable_sampling:
                     val_fake_batch = tf.cast(
-                        (g(val_real_batch, training=False) + 1) * 127.5, tf.uint8)
+                        (g3(val_real_batch, training=False) + 1) * 127.5, tf.uint8)
                     img = np.expand_dims(self._save_generated_images(
                             val_fake_batch,
                             image_name=("gan_val_generated_images_at_epoch_"
@@ -633,7 +652,7 @@ class Trainer:
             g_checkpoint.save(file_prefix=self.generator_checkpoint_prefix)
             d_checkpoint.save(file_prefix=self.discriminator_checkpoint_prefix)
 
-            g.save_weights(os.path.join(self.model_dir, "generator"))
+            g3.save_weights(os.path.join(self.model_dir, "generator"))
             gc.collect()
         del ds_source, ds_target, ds_smooth
         gc.collect()

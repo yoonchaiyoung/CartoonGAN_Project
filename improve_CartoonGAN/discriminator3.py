@@ -2,18 +2,20 @@ import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Conv2D, BatchNormalization, LeakyReLU
 from keras_contrib.layers import InstanceNormalization
-from layers import ZeroPadding2D, ReflectionPadding2D, StridedConv
+from layers3 import ZeroPadding2D, ReflectionPadding2D_3, StridedConv_3
+import tensorflow_addons as tfa
+from tensorflow_addons.layers import WeightNormalization, SpectralNormalization, GroupNormalization
+from switchnorm import SwitchNormalization
 
-
-class Discriminator(Model):
+class Discriminator3(Model):
     def __init__(self,
                  base_filters=32,
                  lrelu_alpha=0.2,
-                 pad_type="reflect",
-                 norm_type="batch"):
-        super(Discriminator, self).__init__(name="Discriminator")
+                 pad_type="reflect"):
+                 # norm_type="group"):
+        super(Discriminator3, self).__init__(name="Discriminator")
         if pad_type == "reflect":
-            self.flat_pad = ReflectionPadding2D()
+            self.flat_pad = ReflectionPadding2D_3()
         elif pad_type == "constant":
             self.flat_pad = ZeroPadding2D()
         else:
@@ -21,27 +23,32 @@ class Discriminator(Model):
 
         self.flat_conv = Conv2D(base_filters, 3)
         self.flat_lru = LeakyReLU(lrelu_alpha)
-        self.strided_conv1 = StridedConv(base_filters * 2,
+        self.strided_conv1 = StridedConv_3(base_filters * 2,
                                          lrelu_alpha,
                                          pad_type,
-                                         norm_type)
-        self.strided_conv2 = StridedConv(base_filters * 4,
+                                         gp_num=32)
+                                         # norm_type)
+        self.strided_conv2 = StridedConv_3(base_filters * 4,
                                          lrelu_alpha,
                                          pad_type,
-                                         norm_type)
-        self.conv2 = Conv2D(base_filters * 8, 3)
+                                         gp_num=128)
+                                         # norm_type)
+        self.gp_norm = GroupNormalization(groups=256, axis=-1)
+        self.conv2 = WeightNormalization(Conv2D(base_filters * 8, 3))
 
-        if norm_type == "instance":
-            self.norm = InstanceNormalization()
-        elif norm_type == "batch":
-            self.norm = BatchNormalization()
+        # if norm_type == "instance":
+        #     self.norm = InstanceNormalization()
+        # elif norm_type == "batch":
+        #     self.norm = BatchNormalization()
+        # elif norm_type == "group":
+        #     self.norm = GroupNormalization(axis=-1)
 
         self.lrelu = LeakyReLU(lrelu_alpha)
 
         self.final_conv = Conv2D(1, 3)
 
     def build(self, input_shape):
-        super(Discriminator, self).build(input_shape)
+        super(Discriminator3, self).build(input_shape)
 
     def call(self, x, training=False):
         x = self.flat_pad(x)
@@ -50,7 +57,8 @@ class Discriminator(Model):
         x = self.strided_conv1(x, training=training)
         x = self.strided_conv2(x, training=training)
         x = self.conv2(x)
-        x = self.norm(x, training=training)
+        x = self.gp_norm(x)
+        # x = self.norm(x, training=training)
         x = self.lrelu(x)
         x = self.final_conv(x)
         return x
@@ -63,7 +71,7 @@ if __name__ == "__main__":
     nx = np.random.rand(*shape).astype(np.float32)
     t = tf.keras.Input(shape=nx.shape[1:], batch_size=nx.shape[0])
     tf.keras.backend.clear_session()
-    sc = StridedConv(t.shape[-1])
+    sc = StridedConv_3(t.shape[-1])
     out = sc(t)
     sc.summary()
     print(f"Input  Shape: {t.shape}")
@@ -71,8 +79,8 @@ if __name__ == "__main__":
     print("\n" * 2)
 
     tf.keras.backend.clear_session()
-    d = Discriminator()
-    out = d(t)
-    d.summary()
+    d3 = Discriminator3()
+    out = d3(t)
+    d3.summary()
     print(f"Input  Shape: {t.shape}")
     print(f"Output Shape: {out.shape}")

@@ -1,29 +1,29 @@
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Conv2D, Activation
-from layers import FlatConv, ConvBlock, ResBlock, UpSampleConv
-from layers import get_padding, DownShuffleUnitV2, BasicShuffleUnitV2
+from layers2 import FlatConv_2, ConvBlock_2, ResBlock_2, UpSampleConv_2
+from layers2 import get_padding, DownShuffleUnitV2_2, BasicShuffleUnitV2_2
 
 
-class Generator(Model):
+class Generator2(Model):
     def __init__(self,
-                 norm_type="instance",
+                 norm_type="spectral",
                  pad_type="constant",
                  base_filters=64,
                  num_resblocks=8,
                  light=False):
-        super(Generator, self).__init__(name="Generator")
+        super(Generator2, self).__init__(name="Generator2")
         if light:
-            downconv = DownShuffleUnitV2
-            resblock = BasicShuffleUnitV2
+            downconv = DownShuffleUnitV2_2
+            resblock = BasicShuffleUnitV2_2
             base_filters += 32
             end_ksize = 5
         else:
-            downconv = ConvBlock
-            resblock = ResBlock
+            downconv = ConvBlock_2
+            resblock = ResBlock_2
             end_ksize = 7
-        upconv = UpSampleConv
-        self.flat_conv1 = FlatConv(filters=base_filters,
+        upconv = UpSampleConv_2
+        self.flat_conv1 = FlatConv_2(filters=base_filters,
                                    kernel_size=end_ksize,
                                    norm_type=norm_type,
                                    pad_type=pad_type)
@@ -42,7 +42,9 @@ class Generator(Model):
         self.residual_blocks = tf.keras.models.Sequential([
             resblock(
                 filters=base_filters * 4,
-                kernel_size=3) for _ in range(num_resblocks)])
+                kernel_size=3,
+                idx=idx
+            ) for idx in range(num_resblocks)])
         self.up_conv1 = upconv(filters=base_filters * 2,
                                kernel_size=3,
                                norm_type=norm_type,
@@ -62,7 +64,7 @@ class Generator(Model):
         self.final_act = Activation("tanh")
 
     def build(self, input_shape):
-        super(Generator, self).build(input_shape)
+        super(Generator2, self).build(input_shape)
 
     def call(self, x, training=False):
         x = self.flat_conv1(x, training=training)
@@ -87,10 +89,10 @@ if __name__ == "__main__":
     nx = np.random.rand(*s).astype(np.float32)
 
     custom_layers = [
-        FlatConv(f, k),
-        ConvBlock(f, k),
-        ResBlock(f, k),
-        UpSampleConv(f, k)
+        FlatConv_2(f, k),
+        ConvBlock_2(f, k),
+        ResBlock_2(f, k),
+        UpSampleConv_2(f, k)
     ]
 
     for layer in custom_layers:
@@ -102,13 +104,14 @@ if __name__ == "__main__":
         print("\n" * 2)
 
     tf.keras.backend.clear_session()
-    g = Generator()
+    g2 = Generator2()
     shape = (1, 256, 256, 3)
     nx = np.random.rand(*shape).astype(np.float32)
     t = tf.keras.Input(shape=nx.shape[1:], batch_size=nx.shape[0])
-    out = g(t, training=False)
-    g.summary()
+    out = g2(t, training=False)
+    g2.summary()
     print(f"Input  Shape: {nx.shape}")
     print(f"Output Shape: {out.shape}")
     assert out.shape == shape, "Output shape doesn't match input shape"
     print("Generator's output shape is exactly the same as shape of input.")
+
