@@ -14,19 +14,11 @@ from generator import Generator
 from discriminator import Discriminator
 
 # GPU 설정
-# os.environ["CUDA_VISIBLE_DEVICES"] = '0'
-#
-# config = tf.compat.v1.ConfigProto()
-# config.gpu_options.allow_growth = True
-# session = tf.compat.v1.Session(config=config)
+os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
-import tensorflow as tf
-print(tf.test.is_built_with_cuda())
-
-print(tf.config.list_physical_devices("GPU"))
-print(tf.sysconfig.get_build_info())
-# 이걸로 돌리니 cpu 30%정도 사용하고 gpu 10% 정도 사용하는 걸로 바뀌고
-# 윈도우 작업 관리자로 봤을 때 전용 gpu 메모리 사용량이 많이 차지하는 것을 알 수 있음
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)
 
 
 @tf.function
@@ -118,7 +110,6 @@ class Trainer:
         self.discriminator_name = discriminator_name
 
         self.logger = get_logger("Trainer", debug=debug)
-        # NOTE: just minimal demonstration of multi-scale training
         self.sizes = [self.input_size - 32, self.input_size, self.input_size + 32]
 
         if not self.ignore_vgg:
@@ -126,7 +117,6 @@ class Trainer:
             from tensorflow.keras.applications import VGG19
             from tensorflow.keras.layers import Conv2D
             input_shape = (self.input_size, self.input_size, 3)
-            # download model using kwarg weights="imagenet"
             base_model = VGG19(weights="imagenet", include_top=False, input_shape=input_shape)
             tmp_vgg_output = base_model.get_layer("block4_conv3").output
             tmp_vgg_output = Conv2D(512, (3, 3), activation='linear', padding='same',
@@ -189,8 +179,8 @@ class Trainer:
         self.discriminator_checkpoint_prefix = os.path.join(
             self.discriminator_checkpoint_dir, self.discriminator_checkpoint_prefix)
 
+
     def _save_generated_images(self, batch_x, image_name, nrow=2, ncol=4):
-        # NOTE: 0 <= batch_x <= 1, float32, numpy.ndarray
         if not isinstance(batch_x, np.ndarray):
             batch_x = batch_x.numpy()
         n, h, w, c = batch_x.shape
@@ -243,12 +233,10 @@ class Trainer:
 
         ds = ds.apply(tf.data.experimental.map_and_batch(fn, batch_size))
         steps = int(np.ceil(num_images/batch_size))
-        # user iter(ds) to avoid generating iterator every epoch
         return iter(ds), steps
 
     @tf.function
     def pass_to_vgg(self, tensor):
-        # NOTE: self.vgg should be fixed
         if self.vgg is not None:
             tensor = self.vgg(tensor)
         return tensor
@@ -303,7 +291,6 @@ class Trainer:
 
             g_adv_loss = self.g_adv_lambda * self.generator_adversarial_loss(fake_output)
             g_total_loss = g_adv_loss
-            # NOTE: self.*_lambdas are fixed
             if self.content_lambda != 0. or self.style_lambda != 0.:
                 vgg_generated_images = self.pass_to_vgg(generated_images)
                 if self.content_lambda != 0.:
@@ -334,6 +321,7 @@ class Trainer:
         self.d_smooth_loss_metric(d_smooth_loss)
 
     def pretrain_generator(self):
+        global step
         summary_writer = tf.summary.create_file_writer(os.path.join(self.log_dir, "pretrain"))
         self.logger.info(f"Starting to pretrain generator with {self.pretrain_epochs} epochs...")
         self.logger.info(
@@ -415,9 +403,6 @@ class Trainer:
             for step in tqdm(
                     range(1, steps_per_epoch + 1),
                     desc=f"Pretrain Epoch {epoch + 1}/{epochs}"):
-                # NOTE: not following official "for img in dataset" example
-                #       since it generates new iterator every epoch and can
-                #       hardly be garbage-collected by python
                 image_batch = dataset.next()
                 self.pretrain_step(image_batch, generator, optimizer)
 
@@ -691,7 +676,6 @@ if __name__ == "__main__":
         parser.add_argument("--pretrain_model_dir", type=str, default="models")
         parser.add_argument("--model_dir", type=str, default="models")
         parser.add_argument("--disable_sampling", action="store_true")
-        # TODO: rearrange the order of options
         parser.add_argument(
             "--pretrain_generator_name", type=str, default="pretrain_generator"
         )

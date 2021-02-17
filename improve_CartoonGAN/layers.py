@@ -1,11 +1,9 @@
 import tensorflow as tf
-import tensorflow.keras.backend as K
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Layer, InputSpec, DepthwiseConv2D
-from tensorflow.keras.layers import Conv2D, BatchNormalization, Add
-from tensorflow.keras.layers import ReLU, LeakyReLU, ZeroPadding2D
-from keras_contrib.layers import InstanceNormalization
-
+import keras.backend as K
+from keras.models import Model
+from keras.layers import Layer, InputSpec, DepthwiseConv2D, Conv2D, Add, ReLU, LeakyReLU, ZeroPadding2D
+from tensorflow_addons.layers import GroupNormalization
+from weightNormalization import WeightNormalization
 
 def channel_shuffle_2(x):
     dyn_shape = tf.shape(x)
@@ -25,7 +23,6 @@ class ReflectionPadding2D(Layer):
         self.input_spec = [InputSpec(ndim=4)]
 
     def compute_output_shape(self, s):
-        """ If you are using "channels_last" configuration"""
         return s[0], s[1] + 2 * self.padding[0], s[2] + 2 * self.padding[1], s[3]
 
     def call(self, x):
@@ -41,20 +38,11 @@ def get_padding(pad_type, padding):
         raise ValueError(f"Unrecognized pad_type {pad_type}")
 
 
-def get_norm(norm_type):
-    if norm_type == "instance":
-        return InstanceNormalization()
-    elif norm_type == 'batch':
-        return BatchNormalization()
-    else:
-        raise ValueError(f"Unrecognized norm_type {norm_type}")
-
-
 class FlatConv(Model):
     def __init__(self,
                  filters,
                  kernel_size,
-                 norm_type="instance",
+                 gp_num=3,
                  pad_type="constant",
                  **kwargs):
         super(FlatConv, self).__init__(name="FlatConv")
@@ -62,8 +50,9 @@ class FlatConv(Model):
         padding = (padding, padding)
         self.model = tf.keras.models.Sequential()
         self.model.add(get_padding(pad_type, padding))
+
+        self.model.add(GroupNormalization(groups=gp_num, axis=-1))
         self.model.add(Conv2D(filters, kernel_size))
-        self.model.add(get_norm(norm_type))
         self.model.add(ReLU())
 
     def build(self, input_shape):
@@ -75,20 +64,19 @@ class FlatConv(Model):
 
 class BasicShuffleUnitV2(Model):
     def __init__(self,
-                 filters,  # NOTE: will be filters // 2
-                 norm_type="instance",
-                 pad_type="constant",
+                 filters,
+                 gp_num=48,
                  **kwargs):
-        super(BasicShuffleUnitV2, self).__init__(name="BasicShuffleUnitV2")
+        super(BasicShuffleUnitV2, self).__init__()
         filters //= 2
         self.model = tf.keras.models.Sequential([
+            GroupNormalization(groups=gp_num, axis=-1),
             Conv2D(filters, 1, use_bias=False),
-            get_norm(norm_type),
             ReLU(),
+            GroupNormalization(groups=gp_num, axis=-1),
             DepthwiseConv2D(3, padding='same', use_bias=False),
-            get_norm(norm_type),
+            GroupNormalization(groups=gp_num, axis=-1),
             Conv2D(filters, 1, use_bias=False),
-            get_norm(norm_type),
             ReLU(),
         ])
 
@@ -103,27 +91,28 @@ class BasicShuffleUnitV2(Model):
 
 class DownShuffleUnitV2(Model):
     def __init__(self,
-                 filters,  # NOTE: will be filters // 2
-                 norm_type="instance",
-                 pad_type="constant",
+                 filters,
+                 gp_num=3,
                  **kwargs):
         super(DownShuffleUnitV2, self).__init__(name="DownShuffleUnitV2")
         filters //= 2
         self.r_model = tf.keras.models.Sequential([
+            GroupNormalization(groups=gp_num, axis=-1),
             Conv2D(filters, 1, use_bias=False),
-            get_norm(norm_type),
             ReLU(),
+            GroupNormalization(groups=gp_num, axis=-1),
             DepthwiseConv2D(3, 2, 'same', use_bias=False),
-            get_norm(norm_type),
-            Conv2D(filters, 1, use_bias=False),
+            GroupNormalization(groups=gp_num, axis=-1),
+            Conv2D(filters, 1, use_bias=False)
         ])
         self.l_model = tf.keras.models.Sequential([
+            GroupNormalization(groups=gp_num, axis=-1),
             DepthwiseConv2D(3, 2, 'same', use_bias=False),
-            get_norm(norm_type),
-            Conv2D(filters, 1, use_bias=False),
+            GroupNormalization(groups=gp_num, axis=-1),
+            Conv2D(filters, 1, use_bias=False)
         ])
         self.bn_act = tf.keras.models.Sequential([
-            get_norm(norm_type),
+            GroupNormalization(groups=gp_num, axis=-1),
             ReLU(),
         ])
 
@@ -141,7 +130,7 @@ class ConvBlock(Model):
                  filters,
                  kernel_size,
                  stride=1,
-                 norm_type="instance",
+                 gp_num=3,
                  pad_type="constant",
                  **kwargs):
         super(ConvBlock, self).__init__(name="ConvBlock")
@@ -150,10 +139,11 @@ class ConvBlock(Model):
 
         self.model = tf.keras.models.Sequential()
         self.model.add(get_padding(pad_type, padding))
-        self.model.add(Conv2D(filters, kernel_size, stride))
+        self.model.add(GroupNormalization(groups=gp_num, axis=-1))
+        self.model.add(WeightNormalization(Conv2D(filters, kernel_size, stride)))
         self.model.add(get_padding(pad_type, padding))
-        self.model.add(Conv2D(filters, kernel_size))
-        self.model.add(get_norm(norm_type))
+        self.model.add(GroupNormalization(groups=gp_num, axis=-1))
+        self.model.add(WeightNormalization(Conv2D(filters, kernel_size)))
         self.model.add(ReLU())
 
     def build(self, input_shape):
@@ -167,21 +157,20 @@ class ResBlock(Model):
     def __init__(self,
                  filters,
                  kernel_size,
-                 idx=1,
-                 norm_type="instance",
+                 gp_num=3,
                  pad_type="constant",
                  **kwargs):
-        super(ResBlock, self).__init__(name="ResBlock_{}".format(idx))
+        super(ResBlock, self).__init__()
         padding = (kernel_size - 1) // 2
         padding = (padding, padding)
         self.model = tf.keras.models.Sequential()
         self.model.add(get_padding(pad_type, padding))
+        self.model.add(GroupNormalization(groups=gp_num, axis=-1))
         self.model.add(Conv2D(filters, kernel_size))
-        self.model.add(get_norm(norm_type))
         self.model.add(ReLU())
         self.model.add(get_padding(pad_type, padding))
+        self.model.add(GroupNormalization(groups=gp_num, axis=-1))
         self.model.add(Conv2D(filters, kernel_size))
-        self.model.add(get_norm(norm_type))
         self.add = Add()
 
     def build(self, input_shape):
@@ -195,19 +184,20 @@ class UpSampleConv(Model):
     def __init__(self,
                  filters,
                  kernel_size,
-                 norm_type="instance",
+                 gp_num=3,
                  pad_type="constant",
                  light=False,
                  **kwargs):
         super(UpSampleConv, self).__init__(name="UpSampleConv")
         if light:
             self.model = tf.keras.models.Sequential([
+                GroupNormalization(groups=gp_num, axis=-1),
                 Conv2D(filters, 1),
-                BasicShuffleUnitV2(filters, norm_type, pad_type)
+                BasicShuffleUnitV2(filters, pad_type)
             ])
         else:
             self.model = ConvBlock(
-                filters, kernel_size, 1, norm_type, pad_type)
+                filters, kernel_size, 1, gp_num, pad_type)
 
     def build(self, input_shape):
         super(UpSampleConv, self).build(input_shape)
@@ -222,17 +212,19 @@ class StridedConv(Model):
                  filters=64,
                  lrelu_alpha=0.2,
                  pad_type="constant",
-                 norm_type="batch",
+                 gp_num=3,
                  **kwargs):
         super(StridedConv, self).__init__(name="StridedConv")
 
         self.model = tf.keras.models.Sequential()
         self.model.add(get_padding(pad_type, (1, 1)))
+        self.model.add(GroupNormalization(groups=gp_num, axis=-1))
         self.model.add(Conv2D(filters, 3, strides=(2, 2)))
         self.model.add(LeakyReLU(lrelu_alpha))
         self.model.add(get_padding(pad_type, (1, 1)))
+
+        self.model.add(GroupNormalization(groups=gp_num, axis=-1))
         self.model.add(Conv2D(filters * 2, 3))
-        self.model.add(get_norm(norm_type))
         self.model.add(LeakyReLU(lrelu_alpha))
 
     def build(self, input_shape):

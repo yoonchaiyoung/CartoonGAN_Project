@@ -1,13 +1,12 @@
 import tensorflow as tf
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Conv2D, Activation
+from keras.models import Model
+from keras.layers import Conv2D, Activation
 from layers import FlatConv, ConvBlock, ResBlock, UpSampleConv
 from layers import get_padding, DownShuffleUnitV2, BasicShuffleUnitV2
 
 
 class Generator(Model):
     def __init__(self,
-                 norm_type="instance",
                  pad_type="constant",
                  base_filters=64,
                  num_resblocks=8,
@@ -25,33 +24,34 @@ class Generator(Model):
         upconv = UpSampleConv
         self.flat_conv1 = FlatConv(filters=base_filters,
                                    kernel_size=end_ksize,
-                                   norm_type=norm_type,
+                                   gp_num=3,
                                    pad_type=pad_type)
         self.down_conv1 = downconv(mid_filters=base_filters,
                                    filters=base_filters * 2,
                                    kernel_size=3,
+                                   gp_num=64,
                                    stride=2,
-                                   norm_type=norm_type,
                                    pad_type=pad_type)
         self.down_conv2 = downconv(mid_filters=base_filters,
                                    filters=base_filters * 4,
                                    kernel_size=3,
                                    stride=2,
-                                   norm_type=norm_type,
+                                   gp_num=128,
                                    pad_type=pad_type)
         self.residual_blocks = tf.keras.models.Sequential([
             resblock(
                 filters=base_filters * 4,
-                kernel_size=3) for _ in range(num_resblocks)])
+                kernel_size=3,
+                gp_num=128) for _ in range(num_resblocks)])
         self.up_conv1 = upconv(filters=base_filters * 2,
                                kernel_size=3,
-                               norm_type=norm_type,
+                               gp_num=128,
                                pad_type=pad_type,
                                light=light)
         self.up_conv2 = upconv(filters=base_filters,
                                kernel_size=3,
-                               norm_type=norm_type,
                                pad_type=pad_type,
+                               gp_num=64,
                                light=light)
 
         end_padding = (end_ksize - 1) // 2
@@ -102,12 +102,12 @@ if __name__ == "__main__":
         print("\n" * 2)
 
     tf.keras.backend.clear_session()
-    g = Generator()
+    g3 = Generator()
     shape = (1, 256, 256, 3)
     nx = np.random.rand(*shape).astype(np.float32)
     t = tf.keras.Input(shape=nx.shape[1:], batch_size=nx.shape[0])
-    out = g(t, training=False)
-    g.summary()
+    out = g3(t, training=False)
+    g3.summary()
     print(f"Input  Shape: {nx.shape}")
     print(f"Output Shape: {out.shape}")
     assert out.shape == shape, "Output shape doesn't match input shape"

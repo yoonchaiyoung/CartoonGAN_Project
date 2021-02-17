@@ -1,6 +1,10 @@
 .git
+.idea
 /data
 /pycharm_project/code/__pycache__
+/improve_CartoonGAN/.idea
+/improve_CartoonGAN/__pycache__
+/improve_CartoonGAN/frozen2_0214_2011
 
 /improve_CartoonGAN/fixed_vgg.npy
 /improve_CartoonGAN/__pycache__/
