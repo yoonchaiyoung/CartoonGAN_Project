@@ -5,7 +5,7 @@ from flask_jwt_extended import create_access_token
 import datetime
 
 bp_login = Blueprint("login", __name__, url_prefix="/login")
-client = MongoClient("mongodb://luckycontrol:qlqjsdlek!@3.133.138.156", 27017)
+client = MongoClient("mongodb://[아이디]:[비밀번호]@[AWS호스팅주소]", 27017)
 db = client.cartoon
 
 # 로그인을 위해 계정찾기
