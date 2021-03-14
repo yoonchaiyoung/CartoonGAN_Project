@@ -1,0 +1,165 @@
+@keyframes initAnimation {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.gallery_container {
+  width: 100%;
+  min-height: 100vh;
+  color: white;
+  animation: initAnimation 1s ease-in;
+}
+
+.gallery_title {
+  padding-top: 80px;
+  padding-left: 100px;
+  font-size: 2rem;
+  letter-spacing: 3px;
+}
+
+.gallery_category {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-top: 15px;
+  position: relative;
+}
+
+.gallery_category span {
+  margin: 0 20px;
+  padding-bottom: 10px;
+  position: relative;
+  cursor: pointer;
+}
+
+.gallery_category span:before {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: #dfe2ea;
+  border-radius: 8px;
+  opacity: 0;
+  transition: 0.3s;
+}
+
+.gallery_category_item.is-active:before {
+  opacity: 1;
+  bottom: 0;
+}
+
+.gallery_category span:not(.is-active):hover:before {
+  opacity: 1;
+  bottom: 0;
+}
+
+/* 정렬 버튼 */
+
+.sortingway_dropdown_container {
+  float: right;
+  padding: 10px;
+  position: relative;
+}
+
+.sortingway_text {
+  display: block;
+  border: 1px solid #f9f9f9;
+  padding: 5px;
+  border-radius: 4px;
+  outline: 0;
+  z-index: 10;
+}
+
+.sortingway_dropdown_items {
+  display: none;
+  position: absolute;
+  padding-right: 10px;
+  right: 0;
+  z-index: 10;
+}
+
+.sortingway_dropdown_items.is-active {
+  display: block;
+}
+
+.sortingway_dropdown_item {
+  display: block;
+  padding: 5px 5px;
+  border: 1px solid white;
+  border-radius: 4px;
+  outline: 0;
+  z-index: 10;
+  background-color: #222831;
+}
+
+.sortingway_dropdown_item:hover {
+  background-color: gray;
+}
+
+.filter_container {
+  display: flex;
+  justify-content: center;
+  clear: both;
+}
+
+.filter_btn {
+  position: relative;
+  margin: 0 10px;
+  padding-bottom: 10px;
+}
+
+.filter_btn::before {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #dfe2ea;
+  border-radius: 8px;
+  transition: .3s;
+  opacity: 0;
+}
+
+.filter_btn:not(.is-selected):hover::before {
+  opacity: 1;
+  bottom: 0;
+}
+
+.filter_btn.is-selected::before {
+  opacity: 1;
+  bottom: 0;
+}
+
+
+/* 갤러리 */
+
+.gallery_content {
+  width: 100%;
+  padding: 10px 100px;
+  padding-bottom: 100px;
+  display: flex;
+  justify-content: center;
+}
+
+@media screen and (max-width: 768px) {
+  .gallery_title {
+    padding-top: 80px;
+    padding-left: 30px;
+  }
+
+  .gallery_content {
+    padding: 10px;
+  }
+
+  .filter_container button {
+    font-size: 0.7rem;
+    font-weight: bold;
+  }
+}

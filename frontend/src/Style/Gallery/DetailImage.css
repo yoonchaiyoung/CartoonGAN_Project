@@ -1,0 +1,68 @@
+.not-scroll {
+    overflow: hidden;
+}
+
+.detail_image_container {
+    width: 100%;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 10000;
+}
+
+ion-icon {
+    float: right;
+}
+
+.detail_image_box {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.detail_image_options {
+    width: 100%;
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    align-items: center;
+    padding-bottom: 10px;
+    opacity: 0;
+}
+
+.detail_image_desc {
+    width: 100%;
+    padding-top: 10px;
+    text-align: right;
+    opacity: 0;
+}
+
+.detail_image_desc p {
+    padding-bottom: 5px;
+}
+
+.detail_image_box img {
+    width: 30%;
+    object-fit: contain;
+}
+
+@media screen and (max-width: 768px) {
+    .detail_image_box img {
+        width: 100%;
+    }
+
+    .detail_image_options {
+        opacity: 1;
+    }   
+
+    .detail_image_desc {
+        opacity: 1;
+    }
+}
